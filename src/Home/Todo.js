@@ -36,7 +36,8 @@ function Todo() {
         taskName: '',
         importance: '0',
         circleFill: false,
-        Addtransition: true
+        Addtransition: true,
+        editmode: false
     });
     const [allTask, setallTask] = useState(getAllTaskfromLS);
     const [completedTask, setcompletedTask] = useState(getCompletedTaskfromLS);
@@ -50,10 +51,10 @@ function Todo() {
     const [reverseSortImportance, setReverseSortImportance] = useState(false);
     const [reverseSortAlphabetic, setReverseSortAlphabetic] = useState(false)
     const [deleteIconColor, setDeleteIconColor] = useState('lightseagreen');
-    const { taskName } = task;
+
+    const { taskName, circleFill, editmode } = task;
 
     const taskDataHandler = (Key) => (event) => {
-        console.log(event.target.value);
         if (event.target.value !== 'Remove All')
             setTask({ ...task, [Key]: event.target.value });
         else {
@@ -138,6 +139,52 @@ function Todo() {
         }));
     }
 
+    const hideRenamingPendingTask = (id, booleanValue) => {
+
+        const temp = allTask.map((task) => {
+            if (task.id === id)
+                return { ...task, editmode: booleanValue }
+            return task;
+        });
+
+        setallTask(temp);
+
+    }
+
+    const hideRenamingCompletedTask = (id, booleanValue) => {
+
+        setcompletedTask(completedTask.map((task) => {
+            if (task.id === id)
+                return { ...task, editmode: booleanValue }
+            return task
+        }));
+
+    }
+
+    const renamePendingTask = (id) => (event) => {
+
+        event.preventDefault();
+
+        setallTask ( allTask.map((task) => {
+            if (task.id === id)
+                return { ...task, taskName: event.target[0].value, editmode:false }
+            return task;
+        }));
+
+    }
+
+    const renameCompletedTask = (id) => (event) => {
+
+        event.preventDefault();
+
+        setcompletedTask(completedTask.map((task) => {
+            if (task.id === id)
+                return { ...task, taskName: event.target[0].value, editmode:false }
+            return task;
+        }));
+
+    }
+
     const deletefromUncompletedTask = (id) => {
         setallTask(allTask.filter((task) => task.id !== id))
     }
@@ -188,13 +235,7 @@ function Todo() {
         setState(booleanValue);
     }
 
-    const updateTaskName = (id) => (event) => {
-        allTask.map((task) => {
-            if (task.id === id) 
-               setTask( { ...task, taskName: event.target.value }) 
-            return task;
-        });
-    }
+
 
     const submit = (eventOfSubmit) => {
 
@@ -219,8 +260,6 @@ function Todo() {
             sortingAlphabetically(reverseSortAlphabetic, tempAllTask, setallTask)
         else
             sortingImportance(reverseSortImportance, tempAllTask, setallTask);
-
-        console.log(task);
 
         setTask({ ...task, taskName: '' });
 
@@ -250,8 +289,6 @@ function Todo() {
 
     }
 
-    console.log("rendered");
-
     useEffect(() => {
         localStorage.setItem('allTask', JSON.stringify(allTask));
     }, [allTask]);
@@ -266,7 +303,10 @@ function Todo() {
             setListContainer(false)
     }
 
-    document.addEventListener('mousedown', eventHandler);
+    useEffect(() => {
+        document.addEventListener('mousedown', eventHandler);
+        return () => document.removeEventListener;
+    })
 
     const iconHandler = () => {
         setIcon(!icon);
@@ -307,9 +347,9 @@ function Todo() {
     }
 
     const removeClass = (Id) => {
-    
+
         setallTask(allTask.map((task) => {
-            if(task.id === Id)
+            if (task.id === Id)
                 return { ...task, Addtransition: false }
             return task
         }));
@@ -416,7 +456,15 @@ function Todo() {
                             </div>
                             : null
                     }
-                    <Tasks allTask={allTask} removefromUncompletedTask={removefromUncompletedTask} changeValueOfCircleFill={changeValueOfCircleFill} deletefromUncompletedTask={deletefromUncompletedTask} deleteIconColor={deleteIconColor} updateTaskName={updateTaskName} removeClass={removeClass} />
+                    <Tasks
+                        allTask={allTask}
+                        removefromUncompletedTask={removefromUncompletedTask}
+                        changeValueOfCircleFill={changeValueOfCircleFill}
+                        deletefromUncompletedTask={deletefromUncompletedTask}
+                        deleteIconColor={deleteIconColor}
+                        hideRenamingPendingTask={hideRenamingPendingTask}
+                        renamePendingTask={renamePendingTask}
+                    />
                     {
                         completedTask.length > 0 ?
                             <div className="completed" onClick={() => { setIsTaskHide(!isTaskHide) }}>
@@ -427,11 +475,20 @@ function Todo() {
                     }
 
                     <div className={`${isTaskHide ? "hideCompletedTask" : "completed-tasks"}`}>
-                        <CompletedTask completedTask={completedTask} removeFromCompletedTask={removeFromCompletedTask} removeCircleFill={removeCircleFill} deletefromCompletedTask={deletefromCompletedTask} deleteIconColor={deleteIconColor} />
+                        <CompletedTask
+                            completedTask={completedTask}
+                            removeFromCompletedTask={removeFromCompletedTask}
+                            removeCircleFill={removeCircleFill}
+                            deletefromCompletedTask={deletefromCompletedTask}
+                            deleteIconColor={deleteIconColor}
+                            hideRenamingCompletedTask={hideRenamingCompletedTask}
+                            renameCompletedTask={renameCompletedTask}
+                        />
                     </div>
+
                 </div>
 
-                <form onSubmit={submit}>
+                <form className='add-newtask' onSubmit={submit}>
                     <div className='row'>
                         {
                             icon ? <BiCircle className='circleIcon' /> : <IoAddSharp className='addIcon' />
